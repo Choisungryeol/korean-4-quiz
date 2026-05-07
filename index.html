@@ -393,6 +393,21 @@ window.onload = function() {
         </button>
       </div>
 
+      <div class="section-label">🔢 문항 수 선택</div>
+      <div style="padding:4px 0 8px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:13px;color:var(--text-sub);min-width:24px;">5</span>
+          <input type="range" id="count-slider" min="5" max="50" value="20" step="1"
+            style="flex:1;accent-color:var(--primary);cursor:pointer;"
+            oninput="updateCountInfo()">
+          <span style="font-size:13px;color:var(--text-sub);min-width:24px;text-align:right;">50</span>
+        </div>
+        <div style="text-align:center;margin-top:6px;">
+          <span style="font-size:18px;font-weight:700;color:var(--primary);" id="slider-display">20</span>
+          <span style="font-size:13px;color:var(--text-sub);">문항</span>
+        </div>
+      </div>
+
       <div id="count-info" style="font-size:13px;color:var(--text-sub);margin-bottom:16px;text-align:center;"></div>
       <button class="start-btn" id="start-btn" onclick="startQuiz()">시작하기</button>
     </div>
@@ -412,6 +427,13 @@ window.onload = function() {
     </div>
     <div id="questions-container"></div>
     <div class="quiz-bottom-space" id="bottom-space" style="display:none;"></div>
+    <div id="feedback-complete" style="display:none;position:sticky;bottom:0;background:white;border-top:2px solid var(--border);padding:16px 20px;z-index:100;">
+      <div style="text-align:center;font-size:15px;font-weight:600;color:var(--primary);margin-bottom:12px;">🎉 모든 문제를 다 풀었어요!</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="goSetup()" style="flex:1;padding:12px;border:2px solid var(--primary);background:white;color:var(--primary);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">← 설정으로</button>
+        <button onclick="retryQuiz()" style="flex:1;padding:12px;border:none;background:var(--primary);color:white;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">🔄 다시 풀기</button>
+      </div>
+    </div>
     <div class="exam-footer" id="exam-footer" style="display:none;">
       <button class="submit-btn" id="submit-btn" onclick="submitExam()" disabled>
         제출하기 (<span id="answered-count">0</span>/20 완료)
@@ -517,12 +539,15 @@ function pickQuestionsWithUniquePassage(pool, count) {
 }
 
 function updateCountInfo() {
+  const slider = document.getElementById('count-slider');
+  const want = parseInt(slider.value);
+  document.getElementById('slider-display').textContent = want;
+
   const pool = getFilteredQuestions();
-  // 읽기: 지문 중복 제거 후 가능한 문제 수 추산
   const readingPassages = new Set(pool.filter(q => q.domain === '읽기' && q.passage_id).map(q => q.passage_id));
   const nonReading = pool.filter(q => q.domain !== '읽기').length;
   const maxPossible = readingPassages.size + nonReading;
-  const pick = Math.min(20, maxPossible);
+  const pick = Math.min(want, maxPossible);
   const el = document.getElementById('count-info');
   const btn = document.getElementById('start-btn');
   if (maxPossible === 0) {
@@ -547,7 +572,8 @@ const DOMAIN_ORDER = {'어휘': 0, '문법': 1, '읽기': 2};
 
 function startQuiz() {
   const pool = getFilteredQuestions();
-  const picked = pickQuestionsWithUniquePassage(pool, 20);
+  const want = parseInt(document.getElementById('count-slider').value);
+  const picked = pickQuestionsWithUniquePassage(pool, want);
   // 어휘 → 문법 → 읽기 순으로 정렬
   picked.sort((a, b) => (DOMAIN_ORDER[a.domain] ?? 9) - (DOMAIN_ORDER[b.domain] ?? 9));
   currentQuestions = picked;
@@ -578,6 +604,7 @@ function renderQuiz() {
   } else {
     document.getElementById('exam-footer').style.display = 'none';
     document.getElementById('bottom-space').style.display = 'none';
+    document.getElementById('feedback-complete').style.display = 'none';
   }
 
   updateProgress();
@@ -693,6 +720,8 @@ function updateProgress() {
   document.getElementById('progress-fill').style.width = `${(answered / total) * 100}%`;
   if (quizMode === 'feedback') {
     document.getElementById('progress-score').textContent = answered > 0 ? `정답 ${correct}개` : '';
+    const banner = document.getElementById('feedback-complete');
+    if (banner) banner.style.display = answered === total && total > 0 ? 'block' : 'none';
   } else if (submitted) {
     document.getElementById('progress-score').textContent = `${correct} / ${total}`;
   } else {
