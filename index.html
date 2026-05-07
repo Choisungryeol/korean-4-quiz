@@ -599,7 +599,7 @@ function renderQuestion(q, idx) {
 
   // 지문 (유형F는 전체 지문 숨김)
   let passageHTML = '';
-  if (q.domain === '읽기' && q.passage_id && q.type !== '유형F') {
+  if (q.domain === '읽기' && q.passage_id && q.type !== '유형F' && q.type !== '유형E') {
     const passage = QUIZ_DATA.passages.find(p => p.id === q.passage_id);
     if (passage) {
       const passageContent = escapeHtml(passage.content).replace(/\n/g, '<br>');
@@ -623,6 +623,7 @@ function renderQuestion(q, idx) {
     `;
   } else if (q.context && typeof q.context === 'string' && q.context.trim()) {
     const ctx = escapeHtml(q.context)
+      .replace(/\n/g, '<br>')
       .replace(/\*\*(.+?)\*\*/g, '<u>$1</u>')
       .replace(/\*(.+?)\*/g, '<u>$1</u>');
     contextHTML = `<div class="context-box">${ctx}</div>`;
