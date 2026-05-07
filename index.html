@@ -582,7 +582,7 @@ function startQuiz() {
   renderQuiz();
 }
 
-function retryQuiz() { startQuiz(); }
+function retryQuiz() { startQuiz(); window.scrollTo({top: 0, behavior: 'smooth'}); }
 
 function goSetup() {
   document.getElementById('setup-screen').style.display = 'block';
